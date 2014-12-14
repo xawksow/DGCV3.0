@@ -947,7 +947,7 @@ boost::filesystem::path GetDefaultDataDir()
     // Unix: ~/.digitalcoin
 #ifdef WIN32
     // Windows
-    return GetSpecialFolderPath(CSIDL_APPDATA) / "Digitalcoin-v3";
+    return GetSpecialFolderPath(CSIDL_APPDATA) / "digitalcoin";
 #else
     fs::path pathRet;
     char* pszHome = getenv("HOME");
@@ -957,12 +957,12 @@ boost::filesystem::path GetDefaultDataDir()
         pathRet = fs::path(pszHome);
 #ifdef MAC_OSX
     // Mac
-    pathRet /= "Library/Application Support";
+    pathRet /= "Library/Application Support/digitalcoin";
     TryCreateDirectory(pathRet);
-    return pathRet / "Digitalcoin-v3";
+    return pathRet;
 #else
     // Unix
-    return pathRet / ".digitalcoin-v3";
+    return pathRet / ".digitalcoin";
 #endif
 #endif
 }
@@ -1035,7 +1035,7 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
 	boost::filesystem::ofstream pathConfigFile(GetConfigFile());
 
 	// Construct the new config file
-	std::string configLine = "listen=1\nserver=1\ndaemon=1\nrpcuser=";
+	std::string configLine = "listen=1\ntxindex=1\nreindex=1\nserver=1\ndaemon=1\nrpcuser=";
 	configLine += random(20);
 	configLine += "\nrpcpassword=";
 	configLine += random(35);
@@ -1065,6 +1065,22 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
     }
     // If datadir is changed in .conf file:
     ClearDatadirCache();
+    boost::filesystem::ifstream streamConfCheck(GetConfigFile());
+    if(streamConfCheck.good()){
+	boost::filesystem::ifstream sConfig(GetConfigFile());
+	std::string newConfig;
+	while(sConfig) {
+	   std::string sLine;
+	   std::getline(sConfig, sLine);
+	   if(sLine.compare("reindex=1") != 0)
+       	      newConfig += sLine + "\n";
+	}
+	boost::filesystem::ofstream pathConfigFile(GetConfigFile());
+	pathConfigFile << newConfig;
+        pathConfigFile.flush();
+        pathConfigFile.close();
+
+    }
 }
 
 boost::filesystem::path GetPidFile()
